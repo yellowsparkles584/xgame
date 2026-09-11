@@ -3,5 +3,4 @@
 @ stdcall -private InitializeApiImplEx(long long long)
 @ stdcall -private InitializeApiImplEx2(long long long ptr)
 @ stdcall -private QueryApiImpl(ptr ptr ptr)
-@ stub -private UninitializeApiImpl()
 @ stub -private XErrorReport(long str)
