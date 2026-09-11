@@ -30,6 +30,11 @@ struct initialize_options
     const char *gameConfig;
 };
 
+HRESULT WINAPI UninitializeApiImpl( void )
+{
+    TRACE("stub!\n");
+    return E_NOTIMPL;
+
 HRESULT WINAPI InitializeApiImplEx2( ULONG gdkVer, ULONG gsVer, char mode, const struct initialize_options *options )
 {
     TRACE( "gdkVer %ld, gsVer %ld, mode %d, options %p.\n", gdkVer, gsVer, mode, options );
