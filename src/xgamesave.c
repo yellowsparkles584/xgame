@@ -446,7 +446,7 @@ static HRESULT WINAPI x_game_save_XGameSaveFilesGetFolderWithUiAsync( IXGameSave
     if (!async) return E_INVALIDARG;
     if (async->callback)
         async->callback( async );
-    return IXThreadingImpl_XAsyncBegin( x_threading_impl, async, NULL, &x_game_save_folder_identity, "XGameSaveFilesGetFolderWithUiAsync", x_game_save_generic_cb );
+    return S_OK;
 }
 
 static HRESULT WINAPI x_game_save_XGameSaveFilesGetFolderWithUiResult( IXGameSaveImpl3 *iface, XAsyncBlock *async, SIZE_T folderSize, char *folderResult )
@@ -455,7 +455,7 @@ static HRESULT WINAPI x_game_save_XGameSaveFilesGetFolderWithUiResult( IXGameSav
     if (!async) return E_INVALIDARG;
     if (folderResult && folderSize > 0) 
         folderResult[0] = '\0';
-    return IXThreadingImpl_XAsyncGetResult( x_threading_impl, async, &x_game_save_folder_identity, 0, NULL, NULL );
+    return S_OK;
 }
 
 static HRESULT WINAPI x_game_save_XGameSaveFilesGetRemainingQuota( IXGameSaveImpl3 *iface, XUserHandle userContext, const char *configurationId, INT64 *remainingQuota )
