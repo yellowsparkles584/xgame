@@ -34,6 +34,7 @@ HRESULT WINAPI UninitializeApiImpl( void )
 {
     TRACE("stub!\n");
     return E_NOTIMPL;
+}
 
 HRESULT WINAPI InitializeApiImplEx2( ULONG gdkVer, ULONG gsVer, char mode, const struct initialize_options *options )
 {
