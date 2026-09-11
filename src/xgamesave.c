@@ -265,7 +265,7 @@ static void get_saves_directory( WCHAR *outPath )
 {
     WCHAR userProfile[MAX_PATH];
     if (!GetEnvironmentVariableW( L"USERPROFILE", userProfile, MAX_PATH ))
-        wcscpy( userProfile, L"C:\\users\\steamuser" );
+        wcscpy( userProfile, L"C:\\users\\xuser" );
 
     swprintf( outPath, MAX_PATH, L"%s\\Documents\\My Games\\Fallout4 MS\\Saves", userProfile );
     CreateDirectoryW( outPath, NULL );
