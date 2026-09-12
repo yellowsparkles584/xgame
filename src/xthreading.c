@@ -24,6 +24,8 @@
 
 WINE_DEFAULT_DEBUG_CHANNEL(gdkc);
 
+static DWORD tlsIndex;
+
 struct x_threading
 {
     IXThreadingImpl IXThreadingImpl_iface;
