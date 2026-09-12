@@ -69,7 +69,7 @@ static ULONG WINAPI x_game_invite_Release( IXGameInviteImpl2 *iface )
     return ref;
 }
 
-static HRESULT WINAPI x_game_XGameInviteRegisterForEvent( IXGameImpl3 *iface, XTaskQueueHandle queue, void *context, XGameInviteEventCallback *callback, XTaskQueueRegistrationToken *token )
+static HRESULT WINAPI x_game_invite_XGameInviteRegisterForEvent( IXGameInviteImpl2 *iface, XTaskQueueHandle queue, void *context, XGameInviteEventCallback *callback, XTaskQueueRegistrationToken *token )
 {
     TRACE( "iface %p, queue %p, context %p, callback %p, token %p\n", iface, queue, context, callback, token );
 
@@ -79,7 +79,7 @@ static HRESULT WINAPI x_game_XGameInviteRegisterForEvent( IXGameImpl3 *iface, XT
     return S_OK;
 }
 
-static BOOLEAN WINAPI x_game_XGameInviteUnregisterForEvent( IXGameImpl3 *iface, XTaskQueueRegistrationToken token, BOOLEAN wait )
+static BOOLEAN WINAPI x_game_invite_XGameInviteUnregisterForEvent( IXGameInviteImpl2 *iface, XTaskQueueRegistrationToken token, BOOLEAN wait )
 {
     TRACE( "iface %p, token %p, wait %d\n", iface, &token, wait );
     return TRUE;
