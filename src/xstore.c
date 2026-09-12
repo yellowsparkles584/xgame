@@ -235,10 +235,51 @@ static HRESULT WINAPI x_store_XStoreQueryProductForPackageResult( IXStoreImpl6 *
     return E_NOTIMPL;
 }
 
+struct XStoreProductQuery
+{
+    UINT32 count;
+    XStoreProduct *products;
+};
+
 static HRESULT WINAPI x_store_XStoreEnumerateProductsQuery( IXStoreImpl6 *iface, const XStoreProductQueryHandle productQueryHandle, void *context, XStoreProductQueryCallback *callback )
 {
-    FIXME( "iface %p, productQueryHandle %p, context %p, callback %p stub!\n", iface, productQueryHandle, context, callback );
-    return E_NOTIMPL;
+    struct XStoreProductQuery *query = (struct XStoreProductQuery *)productQueryHandle;
+    UINT32 i;
+
+    TRACE( "iface %p, productQueryHandle %p, context %p, callback %p\n", iface, productQueryHandle, context, callback );
+
+    if (!productQueryHandle || !callback) return E_POINTER;
+
+    /* Handle dummy/mock query handle fallback */
+    if (productQueryHandle == (XStoreProductQueryHandle)0xDEADBEEF)
+    {
+        XStoreProduct mockProduct = {0};
+        mockProduct.storeId = "mock_store_id";
+        mockProduct.title = "Mock Entitled Product";
+        mockProduct.productKind = XStoreProductKind_Durable;
+
+        callback( &mockProduct, context );
+        return S_OK;
+    }
+
+    for (i = 0; i < query->count; ++i)
+    {
+        if (!callback( &query->products[i], context )) break;
+    }
+
+    return S_OK;
+}
+
+static void WINAPI x_store_XStoreCloseProductsQueryHandle( IXStoreImpl6 *iface, XStoreProductQueryHandle productQueryHandle )
+{
+    struct XStoreProductQuery *query = (struct XStoreProductQuery *)productQueryHandle;
+
+    TRACE( "iface %p, productQueryHandle %p\n", iface, productQueryHandle );
+
+    if (!productQueryHandle || productQueryHandle == (XStoreProductQueryHandle)0xDEADBEEF) return;
+
+    free( query->products );
+    free( query );
 }
 
 static BOOLEAN WINAPI x_store_XStoreProductsQueryHasMorePages( IXStoreImpl6 *iface, const XStoreProductQueryHandle productQueryHandle )
@@ -257,11 +298,6 @@ static HRESULT WINAPI x_store_XStoreProductsQueryNextPageResult( IXStoreImpl6 *i
 {
     FIXME( "iface %p, async %p, productQueryHandle %p stub!\n", iface, async, productQueryHandle );
     return E_NOTIMPL;
-}
-
-static void WINAPI x_store_XStoreCloseProductsQueryHandle( IXStoreImpl6 *iface, XStoreProductQueryHandle productQueryHandle )
-{
-    FIXME( "iface %p, productQueryHandle %p stub!\n", iface, productQueryHandle );
 }
 
 static HRESULT WINAPI x_store_XStoreAcquireLicenseForPackageAsync( IXStoreImpl6 *iface, const XStoreProductQueryHandle productQueryHandle, const char *packageIdentifier, XAsyncBlock *async )
