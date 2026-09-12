@@ -284,7 +284,12 @@ static void WINAPI x_store_XStoreCloseProductsQueryHandle( IXStoreImpl6 *iface, 
 
 static BOOLEAN WINAPI x_store_XStoreProductsQueryHasMorePages( IXStoreImpl6 *iface, const XStoreProductQueryHandle productQueryHandle )
 {
-    FIXME( "iface %p, productQueryHandle %p stub!\n", iface, productQueryHandle );
+    TRACE( "iface %p, productQueryHandle %p\n", iface, productQueryHandle );
+
+    if (!productQueryHandle) return FALSE;
+
+    if (productQueryHandle == (XStoreProductQueryHandle)0xDEADBEEF) return FALSE;
+
     return FALSE;
 }
 
