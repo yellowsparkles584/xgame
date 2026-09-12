@@ -146,10 +146,9 @@ static HRESULT WINAPI x_threading_XTaskQueueDuplicateHandle( IXThreadingImpl *if
 
 static BOOLEAN WINAPI x_threading_XTaskQueueDispatch( IXThreadingImpl *iface, XTaskQueueHandle queue, XTaskQueuePort port, UINT32 timeoutInMs )
 {
-    FIXME( "iface %p, queue %p, port %d, timeoutInMs %d stub!\n", iface, queue, port, timeoutInMs );
-    return FALSE;
+    TRACE( "iface %p, queue %p, port %d, timeoutInMs %d\n", iface, queue, port, timeoutInMs );
+    return TRUE;
 }
-
 static void WINAPI x_threading_XTaskQueueCloseHandle( IXThreadingImpl *iface, XTaskQueueHandle queue )
 {
     FIXME( "iface %p, queue %p stub!\n", iface, queue );
