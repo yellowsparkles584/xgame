@@ -186,7 +186,7 @@ src/xthreading.o: include/xaccessibility.h include/xappcapture.h include/xasync.
   include/xpackage.h include/xpersistentlocalstorage.h include/xspeechsynthesizer.h include/xstore.h include/xsystem.h include/xtaskqueue.h include/xuser.h \
   src/private.h src/xthreading.c
 	$(x86_64_CC) -c -o $@ src/xthreading.c $(x86_64_CFLAGS)
-src/xuser.o: include/xaccessibility.h include/xappcapture.h include/xasync.h include/xasyncprovider.h include/xdisplay.h include/xerror.h include/xgame.h \
+src/xuser.o: include/userprovider.h include/xaccessibility.h include/xappcapture.h include/xasync.h include/xasyncprovider.h include/xdisplay.h include/xerror.h include/xgame.h \
   include/xgameactivation.h include/xgameerr.h include/xgameevent.h include/xgameinvite.h include/xgameprotocol.h include/xgameruntime.h \
   include/xgameruntimefeature.h include/xgameruntimetypes.h include/xgamesave.h include/xgamestreaming.h include/xgameui.h include/xnetworking.h \
   include/xpackage.h include/xpersistentlocalstorage.h include/xspeechsynthesizer.h include/xstore.h include/xsystem.h include/xtaskqueue.h include/xuser.h \
