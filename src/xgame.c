@@ -80,6 +80,22 @@ static HRESULT WINAPI x_game_XGameGetXboxTitleId( IXGameImpl3 *iface, UINT32 *ti
     return S_OK;
 }
 
+static HRESULT WINAPI x_game_XGameInviteRegisterForEvent( IXGameImpl3 *iface, XTaskQueueHandle queue, void *context, XGameInviteEventCallback *callback, XTaskQueueRegistrationToken *token )
+{
+    TRACE( "iface %p, queue %p, context %p, callback %p, token %p\n", iface, queue, context, callback, token );
+
+    if (!callback || !token) return E_POINTER;
+
+    token->token = 0x5678;
+    return S_OK;
+}
+
+static BOOLEAN WINAPI x_game_XGameInviteUnregisterForEvent( IXGameImpl3 *iface, XTaskQueueRegistrationToken token, BOOLEAN wait )
+{
+    TRACE( "iface %p, token %p, wait %d\n", iface, &token, wait );
+    return TRUE;
+}
+
 static void WINAPI x_game_XLaunchNewGame( IXGameImpl3 *iface, const char *exePath, const char *args, XUserHandle defaultUser )
 {
     FIXME( "iface %p exePath %s, args %s, defaultUser %p stub!\n", iface, debugstr_a( exePath ), debugstr_a( args ), defaultUser );
