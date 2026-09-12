@@ -54,8 +54,8 @@ static ULONG WINAPI user_Release( IUser *iface )
 
 static HRESULT WINAPI user_Initialize( IUser *iface, const XUserAddOptions options )
 {
-    FIXME( "iface %p, options %d stub!\n", iface, options );
-    return E_NOTIMPL;
+    TRACE( "iface %p, options %d\n", iface, options );
+    return S_OK;
 }
 
 static HRESULT WINAPI user_GetEndpointInfo( IUser *iface, const char *url, struct endpoint *info )
@@ -279,8 +279,10 @@ static HRESULT WINAPI x_user_XUserFindUserByLocalId( IXUserImpl6 *iface, XUserLo
 
 static HRESULT WINAPI x_user_XUserGetId( IXUserImpl6 *iface, XUserHandle user, UINT64 *userId )
 {
-    FIXME( "iface %p, user %p, userId %p stub!\n", iface, user, userId );
-    return E_NOTIMPL;
+    TRACE( "iface %p, user %p, userId %p.\n", iface, user, userId );
+    if (!userId) return E_POINTER;
+    *userId = 0x72742069670B00B5ULL;
+    return S_OK;
 }
 
 static HRESULT WINAPI x_user_XUserFindUserById( IXUserImpl6 *iface, UINT64 userId, XUserHandle *handle )
@@ -333,7 +335,6 @@ static HRESULT WINAPI x_user_XUserGetAgeGroup( IXUserImpl6 *iface, XUserHandle u
 
 static HRESULT WINAPI x_user_XUserCheckPrivilege( IXUserImpl6 *iface, XUserHandle user, XUserPrivilegeOptions options, XUserPrivilege privilege, BOOLEAN *hasPrivilege, XUserPrivilegeDenyReason *reason )
 {
-    return E_NOTIMPL;
     TRACE( "iface %p, user %p, options %d, privilege %d, hasPrivilege %p, reason %p\n", iface, user, options, privilege, hasPrivilege, reason );
     if (hasPrivilege) *hasPrivilege = TRUE;
     if (reason) *reason = (XUserPrivilegeDenyReason)0;
@@ -442,14 +443,39 @@ static void WINAPI x_user_XUserCloseSignOutDeferralHandle( IXUserImpl6 *iface, X
 
 static HRESULT WINAPI x_user_XUserAddByIdWithUiAsync( IXUserImpl6 *iface, UINT64 userId, XAsyncBlock *async )
 {
-    FIXME( "iface %p, userId %llu, async %p stub!\n", iface, userId, async );
-    return E_NOTIMPL;
+    struct XUserAddContext *context;
+    IXThreadingImpl *xthreading;
+    HRESULT hr;
+
+    TRACE( "iface %p, userId %llu, async %p.\n", iface, userId, async );
+
+    if (!async) return E_POINTER;
+    if (FAILED(hr = QueryApiImpl( &CLSID_XThreadingImpl, &IID_IXThreadingImpl, (void **)&xthreading ))) return hr;
+    if (!(context = calloc( 1, sizeof(*context) )))
+    {
+        IXThreadingImpl_Release( xthreading );
+        return E_OUTOFMEMORY;
+    }
+
+    context->options = (XUserAddOptions)0;
+    hr = IXThreadingImpl_XAsyncBegin( xthreading, async, context, NULL, "XUserAddByIdWithUiAsync", XUserAddProvider );
+    IXThreadingImpl_Release( xthreading );
+    if (FAILED(hr)) free( context );
+    return hr;
 }
 
 static HRESULT WINAPI x_user_XUserAddByIdWithUiResult( IXUserImpl6 *iface, XAsyncBlock *async, XUserHandle *newUser )
 {
-    FIXME( "iface %p, async %p, newUser %p stub!\n", iface, async, newUser );
-    return E_NOTIMPL;
+    IXThreadingImpl *xthreading;
+    HRESULT hr;
+
+    TRACE( "iface %p, async %p, newUser %p.\n", iface, async, newUser );
+
+    if (!async || !newUser) return E_POINTER;
+    if (FAILED(hr = QueryApiImpl( &CLSID_XThreadingImpl, &IID_IXThreadingImpl, (void **)&xthreading ))) return hr;
+    hr = IXThreadingImpl_XAsyncGetResult( xthreading, async, NULL, sizeof(*newUser), newUser, NULL );
+    IXThreadingImpl_Release( xthreading );
+    return hr;
 }
 
 static HRESULT WINAPI x_user_XUserGetMsaTokenSilentlyAsync( IXUserImpl6 *iface, XUserHandle user, XUserGetMsaTokenSilentlyOptions options, const char *scope, XAsyncBlock *async )
@@ -603,8 +629,21 @@ static ULONG WINAPI x_user_gamertag_Release( IXUserGamertagImpl *iface )
 
 static HRESULT WINAPI x_user_gamertag_XUserGetGamertag( IXUserGamertagImpl *iface, XUserHandle user, XUserGamertagComponent gamertagComponent, SIZE_T gamertagSize, char *gamertag, SIZE_T *gamertagUsed )
 {
-    FIXME( "iface %p, user %p, gamertagComponent %d, gamertagSize %Iu, gamertag %p, gamertagUsed %p stub!\n", iface, user, gamertagComponent, gamertagSize, gamertag, gamertagUsed );
-    return E_NOTIMPL;
+    const char *default_gt = "Player1";
+    SIZE_T len;
+
+    TRACE( "iface %p, user %p, gamertagComponent %d, gamertagSize %Iu, gamertag %p, gamertagUsed %p\n", iface, user, gamertagComponent, gamertagSize, gamertag, gamertagUsed );
+
+    if (!gamertag) return E_POINTER;
+
+    len = min(strlen(default_gt), gamertagSize > 0 ? gamertagSize - 1 : 0);
+    memcpy(gamertag, default_gt, len);
+    gamertag[len] = '\0';
+
+    if (gamertagUsed)
+        *gamertagUsed = len;
+
+    return S_OK;
 }
 
 static const struct IXUserGamertagImplVtbl x_user_gamertag_vtbl =
