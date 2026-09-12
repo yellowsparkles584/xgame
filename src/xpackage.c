@@ -291,8 +291,9 @@ static HRESULT WINAPI x_package_XPackageEnumeratePackages3( IXPackageImpl3 *ifac
 
 static HRESULT WINAPI x_package_XPackageRegisterPackageInstalled3( IXPackageImpl3 *iface, XTaskQueueHandle queue, void *context, XPackageInstalledCallback *callback, XTaskQueueRegistrationToken *token )
 {
-    FIXME( "iface %p, queue %p, context %p, callback %p, token %p stub!\n", iface, queue, context, callback, token );
-    return E_NOTIMPL;
+    TRACE( "iface %p, queue %p, context %p, callback %p, token %p\n", iface, queue, context, callback, token );
+    if (!callback) return E_INVALIDARG;
+    return S_OK;
 }
 
 static const struct IXPackageImpl3Vtbl x_package_vtbl =
