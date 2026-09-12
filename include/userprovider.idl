@@ -22,7 +22,6 @@
 #pragma winrt ns_prefix
 #endif
 
-import "windows.data.json.idl";
 import "xuser.idl";
 
 struct endpoint;
