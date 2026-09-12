@@ -20,7 +20,7 @@
  */
 
 #include "private.h"
-#include "userprovider.h"
+#include "userprovider.idl"
 
 WINE_DEFAULT_DEBUG_CHANNEL(gdkc);
 
