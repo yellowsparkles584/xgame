@@ -333,20 +333,27 @@ static HRESULT WINAPI x_user_XUserGetAgeGroup( IXUserImpl6 *iface, XUserHandle u
 
 static HRESULT WINAPI x_user_XUserCheckPrivilege( IXUserImpl6 *iface, XUserHandle user, XUserPrivilegeOptions options, XUserPrivilege privilege, BOOLEAN *hasPrivilege, XUserPrivilegeDenyReason *reason )
 {
-    FIXME( "iface %p, user %p, options %d, privilege %d, hasPrivilege %p, reason %p stub!\n", iface, user, options, privilege, hasPrivilege, reason );
     return E_NOTIMPL;
+    TRACE( "iface %p, user %p, options %d, privilege %d, hasPrivilege %p, reason %p\n", iface, user, options, privilege, hasPrivilege, reason );
+    if (hasPrivilege) *hasPrivilege = TRUE;
+    if (reason) *reason = (XUserPrivilegeDenyReason)0;
+    return S_OK;
 }
 
 static HRESULT WINAPI x_user_XUserResolvePrivilegeWithUiAsync( IXUserImpl6 *iface, XUserHandle user, XUserPrivilegeOptions options, XUserPrivilege privilege, XAsyncBlock *async )
 {
-    FIXME( "iface %p, user %p, options %d, privilege %d, async %p stub!\n", iface, user, options, privilege, async );
-    return E_NOTIMPL;
+    TRACE( "iface %p, user %p, options %d, privilege %d, async %p\n", iface, user, options, privilege, async );
+    if (!async) return E_INVALIDARG;
+    if (async->callback)
+        async->callback( async );
+    return S_OK;
 }
 
 static HRESULT WINAPI x_user_XUserResolvePrivilegeWithUiResult( IXUserImpl6 *iface, XAsyncBlock *async )
 {
-    FIXME( "iface %p, async %p stub!\n", iface, async );
-    return E_NOTIMPL;
+    TRACE( "iface %p, async %p\n", iface, async );
+    if (!async) return E_INVALIDARG;
+    return S_OK;
 }
 
 static HRESULT WINAPI x_user_XUserGetTokenAndSignatureAsync( IXUserImpl6 *iface, XUserHandle user, XUserGetTokenAndSignatureOptions options, const char *method, const char *url, SIZE_T headerCount, const XUserGetTokenAndSignatureHttpHeader *headers, SIZE_T bodySize, const void *bodyBuffer, XAsyncBlock *async )
