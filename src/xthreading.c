@@ -20,9 +20,6 @@
  */
 
 #include "private.h"
-#include "wine/list.h"
-
-WINE_DEFAULT_DEBUG_CHANNEL(gdkc);
 
 struct x_threading
 {
