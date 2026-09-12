@@ -12,12 +12,14 @@ WIDLFLAGS = -m64 -Iinclude -D__WINESRC__
 .PHONY: all clean
 all: xgameruntime.dll
 clean:
-	rm include/xaccessibility.h include/xappcapture.h include/xasyncprovider.h include/xdisplay.h include/xerror.h include/xgame.h include/xgameactivation.h \
+	rm include/userprovider.h include/xaccessibility.h include/xappcapture.h include/xasyncprovider.h include/xdisplay.h include/xerror.h include/xgame.h include/xgameactivation.h \
   include/xgameevent.h include/xgameinvite.h include/xgameprotocol.h include/xgameruntimefeature.h include/xgamesave.h include/xgamestreaming.h \
   include/xgameui.h include/xnetworking.h include/xpackage.h include/xpersistentlocalstorage.h include/xstore.h include/xsystem.h include/xuser.h src/main.o \
   src/xaccessibility.o src/xappcapture.o src/xdisplay.o src/xerror.o src/xgame.o src/xgameactivation.o src/xgameevent.o src/xgameinvite.o src/xgameprotocol.o \
   src/xgameruntimefeature.o src/xgamesave.o src/xgamestreaming.o src/xgameui.o src/xnetworking.o src/xpackage.o src/xpersistentlocalstorage.o src/xstore.o \
   src/xsystem.o src/xsystemanalytics.o src/xthreading.o src/xuser.o xgameruntime.dll
+include/userprovider.h: include/userprovider.idl
+	$(WIDL) -o $@ include/userprovider.idl $(WIDLFLAGS)
 include/xaccessibility.h: include/xaccessibility.idl include/xgameruntimetypes.h include/xspeechsynthesizer.h
 	$(WIDL) -o $@ include/xaccessibility.idl $(WIDLFLAGS)
 include/xappcapture.h: include/xappcapture.idl include/xasync.h include/xtaskqueue.h include/xuser.idl
