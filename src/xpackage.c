@@ -285,8 +285,9 @@ static HRESULT WINAPI x_package_XPackageMountWithUiResult( IXPackageImpl3 *iface
 
 static HRESULT WINAPI x_package_XPackageEnumeratePackages3( IXPackageImpl3 *iface, XPackageKind kind, XPackageEnumerationScope scope, void *context, XPackageEnumerationCallback *callback )
 {
-    FIXME( "iface %p, kind %d, scope %d, context %p, callback %p stub!\n", iface, kind, scope, context, callback );
-    return E_NOTIMPL;
+    TRACE( "iface %p, kind %d, scope %d, context %p, callback %p!\n", iface, kind, scope, context, callback );
+    if (!callback) return E_INVALIDARG;
+    return S_OK;
 }
 
 static HRESULT WINAPI x_package_XPackageRegisterPackageInstalled3( IXPackageImpl3 *iface, XTaskQueueHandle queue, void *context, XPackageInstalledCallback *callback, XTaskQueueRegistrationToken *token )
