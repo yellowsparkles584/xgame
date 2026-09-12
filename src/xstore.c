@@ -111,8 +111,8 @@ static HRESULT WINAPI x_store_XStoreQueryProductsResult( IXStoreImpl6 *iface, XA
 static HRESULT WINAPI x_store_XStoreQueryEntitledProductsAsync( IXStoreImpl6 *iface, const XStoreContextHandle storeContextHandle, XStoreProductKind productKinds, UINT32 maxItemsToRetrievePerPage, XAsyncBlock *async )
 {
     TRACE( "iface %p, storeContextHandle %p, productKinds %#x, maxItemsToRetrievePerPage %u, async %p\n", iface, storeContextHandle, productKinds, maxItemsToRetrievePerPage, async );
-    if (!async) return E_INVALIDARG;
-    XAsyncComplete( async, S_OK, 0 );
+    if (async->callback)
+        async->callback( async );
     return S_OK;
 }
 
