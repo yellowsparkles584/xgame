@@ -149,6 +149,7 @@ static BOOLEAN WINAPI x_threading_XTaskQueueDispatch( IXThreadingImpl *iface, XT
     TRACE( "iface %p, queue %p, port %d, timeoutInMs %d\n", iface, queue, port, timeoutInMs );
     return TRUE;
 }
+
 static void WINAPI x_threading_XTaskQueueCloseHandle( IXThreadingImpl *iface, XTaskQueueHandle queue )
 {
     FIXME( "iface %p, queue %p stub!\n", iface, queue );
