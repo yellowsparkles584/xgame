@@ -357,22 +357,146 @@ static HRESULT WINAPI x_user_XUserResolvePrivilegeWithUiResult( IXUserImpl6 *ifa
     return S_OK;
 }
 
+struct XUserTokenAndSignatureContext
+{
+    char *buffer;
+    SIZE_T bufferSize;
+};
+
+static HRESULT WINAPI XUserGetTokenAndSignatureProvider( XAsyncOp op, const XAsyncProviderData *data )
+{
+    struct XUserTokenAndSignatureContext *context;
+    IXThreadingImpl *xthreading;
+    HRESULT hr;
+
+    TRACE( "op %d, data %p.\n", op, data );
+
+    if (FAILED(hr = QueryApiImpl( &CLSID_XThreadingImpl, &IID_IXThreadingImpl, (void **)&xthreading ))) return hr;
+    context = (struct XUserTokenAndSignatureContext *)data->context;
+
+    switch (op)
+    {
+        case XAsyncOp_Begin:
+            hr = IXThreadingImpl_XAsyncSchedule( xthreading, data->async, 0 );
+            break;
+
+        case XAsyncOp_GetResult:
+            if (data->bufferSize < context->bufferSize)
+            {
+                hr = E_NOT_SUFFICIENT_BUFFER;
+                break;
+            }
+            memcpy( data->buffer, context->buffer, context->bufferSize );
+            if (data->bufferSize >= sizeof(XUserGetTokenAndSignatureData *))
+            {
+                XUserGetTokenAndSignatureData **ptrToBuffer = (XUserGetTokenAndSignatureData **)data->buffer;
+                *ptrToBuffer = (XUserGetTokenAndSignatureData *)((BYTE *)data->buffer + sizeof(XUserGetTokenAndSignatureData *));
+            }
+            break;
+
+        case XAsyncOp_DoWork:
+            {
+                const char *mock_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.signature";
+                const char *mock_signature = "mock_signature_hash_bytes";
+                SIZE_T token_len = strlen(mock_token) + 1;
+                SIZE_T sig_len = strlen(mock_signature) + 1;
+                SIZE_T struct_offset = sizeof(XUserGetTokenAndSignatureData *);
+                SIZE_T data_offset = struct_offset + sizeof(XUserGetTokenAndSignatureData);
+
+                context->bufferSize = data_offset + token_len + sig_len;
+                if (!(context->buffer = calloc( 1, context->bufferSize )))
+                {
+                    hr = E_OUTOFMEMORY;
+                    goto complete;
+                }
+
+                XUserGetTokenAndSignatureData *tokenData = (XUserGetTokenAndSignatureData *)(context->buffer + struct_offset);
+                char *str_ptr = context->buffer + data_offset;
+
+                tokenData->tokenSize = token_len - 1;
+                tokenData->token = str_ptr;
+                memcpy( str_ptr, mock_token, token_len );
+                str_ptr += token_len;
+
+                tokenData->signatureSize = sig_len - 1;
+                tokenData->signature = str_ptr;
+                memcpy( str_ptr, mock_signature, sig_len );
+
+                hr = S_OK;
+            }
+
+        complete:
+            IXThreadingImpl_XAsyncComplete( xthreading, data->async, hr, SUCCEEDED(hr) ? context->bufferSize : 0 );
+            hr = S_OK;
+            break;
+
+        case XAsyncOp_Cleanup:
+            if (context) free( context->buffer );
+            free( context );
+            break;
+
+        case XAsyncOp_Cancel:
+            break;
+    }
+
+    IXThreadingImpl_Release( xthreading );
+    return hr;
+}
+
 static HRESULT WINAPI x_user_XUserGetTokenAndSignatureAsync( IXUserImpl6 *iface, XUserHandle user, XUserGetTokenAndSignatureOptions options, const char *method, const char *url, SIZE_T headerCount, const XUserGetTokenAndSignatureHttpHeader *headers, SIZE_T bodySize, const void *bodyBuffer, XAsyncBlock *async )
 {
-    FIXME( "iface %p, user %p, options %d, method %s, url %s, headerCount %Iu, headers %p, bodySize %Iu, bodyBuffer %p, async %p stub!\n", iface, user, options, debugstr_a( method ), debugstr_a( url ), headerCount, headers, bodySize, bodyBuffer, async );
-    return E_NOTIMPL;
+    struct XUserTokenAndSignatureContext *context;
+    IXThreadingImpl *xthreading;
+    HRESULT hr;
+
+    TRACE( "iface %p, user %p, options %d, method %s, url %s, headerCount %Iu, headers %p, bodySize %Iu, bodyBuffer %p, async %p\n", iface, user, options, debugstr_a( method ), debugstr_a( url ), headerCount, headers, bodySize, bodyBuffer, async );
+
+    if (!async) return E_POINTER;
+    if (FAILED(hr = QueryApiImpl( &CLSID_XThreadingImpl, &IID_IXThreadingImpl, (void **)&xthreading ))) return hr;
+    if (!(context = calloc( 1, sizeof(*context) )))
+    {
+        IXThreadingImpl_Release( xthreading );
+        return E_OUTOFMEMORY;
+    }
+
+    hr = IXThreadingImpl_XAsyncBegin( xthreading, async, context, NULL, "XUserGetTokenAndSignatureAsync", XUserGetTokenAndSignatureProvider );
+    IXThreadingImpl_Release( xthreading );
+    if (FAILED(hr)) free( context );
+    return hr;
 }
 
 static HRESULT WINAPI x_user_XUserGetTokenAndSignatureResultSize( IXUserImpl6 *iface, XAsyncBlock *async, SIZE_T *bufferSize )
 {
-    FIXME( "iface %p, async %p, bufferSize %p stub!\n", iface, async, bufferSize );
-    return E_NOTIMPL;
+    IXThreadingImpl *xthreading;
+    HRESULT hr;
+
+    TRACE( "iface %p, async %p, bufferSize %p\n", iface, async, bufferSize );
+
+    if (!async || !bufferSize) return E_POINTER;
+    if (FAILED(hr = QueryApiImpl( &CLSID_XThreadingImpl, &IID_IXThreadingImpl, (void **)&xthreading ))) return hr;
+    hr = IXThreadingImpl_XAsyncGetResultSize( xthreading, async, bufferSize );
+    IXThreadingImpl_Release( xthreading );
+    return hr;
 }
 
 static HRESULT WINAPI x_user_XUserGetTokenAndSignatureResult( IXUserImpl6 *iface, XAsyncBlock *async, SIZE_T bufferSize, void *buffer, XUserGetTokenAndSignatureData **ptrToBuffer, SIZE_T *bufferUsed )
 {
-    FIXME( "iface %p, async %p, bufferSize %Iu, buffer %p, ptrToBuffer %p, bufferUsed %p stub!\n", iface, async, bufferSize, buffer, ptrToBuffer, bufferUsed );
-    return E_NOTIMPL;
+    IXThreadingImpl *xthreading;
+    HRESULT hr;
+
+    TRACE( "iface %p, async %p, bufferSize %Iu, buffer %p, ptrToBuffer %p, bufferUsed %p\n", iface, async, bufferSize, buffer, ptrToBuffer, bufferUsed );
+
+    if (!async || !buffer) return E_POINTER;
+    if (FAILED(hr = QueryApiImpl( &CLSID_XThreadingImpl, &IID_IXThreadingImpl, (void **)&xthreading ))) return hr;
+    hr = IXThreadingImpl_XAsyncGetResult( xthreading, async, NULL, bufferSize, buffer, bufferUsed );
+    IXThreadingImpl_Release( xthreading );
+
+    if (SUCCEEDED(hr) && ptrToBuffer)
+    {
+        *ptrToBuffer = *(XUserGetTokenAndSignatureData **)buffer;
+    }
+
+    return hr;
 }
 
 static HRESULT WINAPI x_user_XUserGetTokenAndSignatureUtf16Async( IXUserImpl6 *iface, XUserHandle user, XUserGetTokenAndSignatureOptions options, const WCHAR *method, const WCHAR *url, SIZE_T headerCount, const XUserGetTokenAndSignatureUtf16HttpHeader *headers, SIZE_T bodySize, const void *bodyBuffer, XAsyncBlock *async )
