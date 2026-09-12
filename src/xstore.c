@@ -78,28 +78,122 @@ static void WINAPI x_store_XStoreCloseContextHandle( IXStoreImpl6 *iface, XStore
     FIXME( "iface %p, storeContextHandle %p stub!\n", iface, storeContextHandle );
 }
 
-static HRESULT WINAPI x_store_XStoreQueryAssociatedProductsAsync( IXStoreImpl6 *iface, const XStoreContextHandle storeContextHandle, XStoreProductKind productKinds, UINT32 maxItemsToRetrievePerPage, XAsyncBlock *async )
+struct XStoreQueryProductsContext
 {
-    FIXME( "iface %p, storeContextHandle %p, productKinds %#x, maxItemsToRetrievePerPage %u, async %p stub!\n", iface, storeContextHandle, productKinds, maxItemsToRetrievePerPage, async );
-    return E_NOTIMPL;
-}
+    XStoreProductQueryHandle queryHandle;
+};
 
-static HRESULT WINAPI x_store_XStoreQueryAssociatedProductsResult( IXStoreImpl6 *iface, XAsyncBlock *async, XStoreProductQueryHandle *productQueryHandle )
+static HRESULT WINAPI XStoreQueryProductsProvider( XAsyncOp op, const XAsyncProviderData *data )
 {
-    FIXME( "iface %p, async %p, productQueryHandle %p stub!\n", iface, async, productQueryHandle );
-    return E_NOTIMPL;
-}
+    struct XStoreQueryProductsContext *context;
+    IXThreadingImpl *xthreading;
+    HRESULT hr;
 
-static HRESULT WINAPI x_store_XStoreQueryProductsAsync( IXStoreImpl6 *iface, const XStoreContextHandle storeContextHandle, XStoreProductKind productKinds, const char **storeIds, SIZE_T storeIdsCount, const char **actionFilters, SIZE_T actionFiltersCount, XAsyncBlock *async )
-{
-    FIXME( "iface %p, storeContextHandle %p, productKinds %#x, storeIds %p, storeIdsCount %Iu, actionFilters %p, actionFiltersCount %Iu, async %p stub!\n", iface, storeContextHandle, productKinds, storeIds, storeIdsCount, actionFilters, actionFiltersCount, async );
-    return E_NOTIMPL;
+    TRACE( "op %d, data %p.\n", op, data );
+
+    if (FAILED(hr = QueryApiImpl( &CLSID_XThreadingImpl, &IID_IXThreadingImpl, (void **)&xthreading ))) return hr;
+    context = (struct XStoreQueryProductsContext *)data->context;
+
+    switch (op)
+    {
+        case XAsyncOp_Begin:
+            hr = IXThreadingImpl_XAsyncSchedule( xthreading, data->async, 0 );
+            break;
+
+        case XAsyncOp_GetResult:
+            if (data->bufferSize < sizeof(XStoreProductQueryHandle))
+            {
+                hr = E_NOT_SUFFICIENT_BUFFER;
+                break;
+            }
+            *(XStoreProductQueryHandle *)data->buffer = context->queryHandle;
+            break;
+
+        case XAsyncOp_DoWork:
+            context->queryHandle = (XStoreProductQueryHandle)0xDEADBEEF;
+            IXThreadingImpl_XAsyncComplete( xthreading, data->async, S_OK, sizeof(XStoreProductQueryHandle) );
+            hr = S_OK;
+            break;
+
+        case XAsyncOp_Cleanup:
+            free( context );
+            break;
+
+        case XAsyncOp_Cancel:
+            break;
+    }
+
+    IXThreadingImpl_Release( xthreading );
+    return hr;
 }
 
 static HRESULT WINAPI x_store_XStoreQueryProductsResult( IXStoreImpl6 *iface, XAsyncBlock *async, XStoreProductQueryHandle *productQueryHandle )
 {
-    FIXME( "iface %p, async %p, productQueryHandle %p stub!\n", iface, async, productQueryHandle );
-    return E_NOTIMPL;
+    IXThreadingImpl *xthreading;
+    HRESULT hr;
+
+    TRACE( "iface %p, async %p, productQueryHandle %p\n", iface, async, productQueryHandle );
+
+    if (!async || !productQueryHandle) return E_POINTER;
+
+    if (FAILED(hr = QueryApiImpl( &CLSID_XThreadingImpl, &IID_IXThreadingImpl, (void **)&xthreading ))) return hr;
+    hr = IXThreadingImpl_XAsyncGetResult( xthreading, async, NULL, sizeof(XStoreProductQueryHandle), productQueryHandle, NULL );
+    IXThreadingImpl_Release( xthreading );
+
+    return hr;
+}
+
+static HRESULT WINAPI x_store_XStoreQueryAssociatedProductsAsync( IXStoreImpl6 *iface, const XStoreContextHandle storeContextHandle, XStoreProductKind productKinds, UINT32 maxItemsToRetrievePerPage, XAsyncBlock *async )
+{
+    struct XStoreQueryProductsContext *context;
+    IXThreadingImpl *xthreading;
+    HRESULT hr;
+
+    TRACE( "iface %p, storeContextHandle %p, productKinds %#x, maxItemsToRetrievePerPage %u, async %p\n", iface, storeContextHandle, productKinds, maxItemsToRetrievePerPage, async );
+
+    if (!async) return E_POINTER;
+    if (FAILED(hr = QueryApiImpl( &CLSID_XThreadingImpl, &IID_IXThreadingImpl, (void **)&xthreading ))) return hr;
+
+    if (!(context = calloc( 1, sizeof(*context) )))
+    {
+        IXThreadingImpl_Release( xthreading );
+        return E_OUTOFMEMORY;
+    }
+
+    hr = IXThreadingImpl_XAsyncBegin( xthreading, async, context, NULL, "XStoreQueryAssociatedProductsAsync", XStoreQueryProductsProvider );
+    IXThreadingImpl_Release( xthreading );
+
+    if (FAILED(hr)) free( context );
+    return hr;
+}
+
+static HRESULT WINAPI x_store_XStoreQueryAssociatedProductsResult( IXStoreImpl6 *iface, XAsyncBlock *async, XStoreProductQueryHandle *productQueryHandle )
+{
+    return x_store_XStoreQueryProductsResult( iface, async, productQueryHandle );
+}
+
+static HRESULT WINAPI x_store_XStoreQueryProductsAsync( IXStoreImpl6 *iface, const XStoreContextHandle storeContextHandle, XStoreProductKind productKinds, const char **storeIds, SIZE_T storeIdsCount, const char **actionFilters, SIZE_T actionFiltersCount, XAsyncBlock *async )
+{
+    struct XStoreQueryProductsContext *context;
+    IXThreadingImpl *xthreading;
+    HRESULT hr;
+
+    TRACE( "iface %p, storeContextHandle %p, productKinds %#x, storeIds %p, storeIdsCount %Iu, actionFilters %p, actionFiltersCount %Iu, async %p\n", iface, storeContextHandle, productKinds, storeIds, storeIdsCount, actionFilters, actionFiltersCount, async );
+
+    if (!async) return E_POINTER;
+    if (FAILED(hr = QueryApiImpl( &CLSID_XThreadingImpl, &IID_IXThreadingImpl, (void **)&xthreading ))) return hr;
+
+    if (!(context = calloc( 1, sizeof(*context) )))
+    {
+        IXThreadingImpl_Release( xthreading );
+        return E_OUTOFMEMORY;
+    }
+
+    hr = IXThreadingImpl_XAsyncBegin( xthreading, async, context, NULL, "XStoreQueryProductsAsync", XStoreQueryProductsProvider );
+    IXThreadingImpl_Release( xthreading );
+
+    if (FAILED(hr)) free( context );
+    return hr;
 }
 
 struct XStoreContext
@@ -352,34 +446,170 @@ static HRESULT WINAPI x_store_XStoreCanAcquireLicenseForPackageResult( IXStoreIm
     return E_NOTIMPL;
 }
 
+struct XStoreQueryLicenseContext
+{
+    BYTE buffer[sizeof(XStoreGameLicense)];
+};
+
+static HRESULT WINAPI XStoreQueryGameLicenseProvider( XAsyncOp op, const XAsyncProviderData *data )
+{
+    struct XStoreQueryLicenseContext *context;
+    IXThreadingImpl *xthreading;
+    HRESULT hr;
+
+    TRACE( "op %d, data %p.\n", op, data );
+
+    if (FAILED(hr = QueryApiImpl( &CLSID_XThreadingImpl, &IID_IXThreadingImpl, (void **)&xthreading ))) return hr;
+    context = (struct XStoreQueryLicenseContext *)data->context;
+
+    switch (op)
+    {
+        case XAsyncOp_Begin:
+            hr = IXThreadingImpl_XAsyncSchedule( xthreading, data->async, 0 );
+            break;
+
+        case XAsyncOp_GetResult:
+            if (data->bufferSize < sizeof(XStoreGameLicense))
+            {
+                hr = E_NOT_SUFFICIENT_BUFFER;
+                break;
+            }
+            memcpy( data->buffer, context->buffer, sizeof(XStoreGameLicense) );
+            break;
+
+        case XAsyncOp_DoWork:
+            {
+                XStoreGameLicense *license = (XStoreGameLicense *)context->buffer;
+                memset( license, 0, sizeof(*license) );
+                license->isActive = TRUE;
+                license->isTrial = FALSE;
+                license->isDiscLicense = FALSE;
+
+                IXThreadingImpl_XAsyncComplete( xthreading, data->async, S_OK, sizeof(XStoreGameLicense) );
+                hr = S_OK;
+            }
+            break;
+
+        case XAsyncOp_Cleanup:
+            free( context );
+            break;
+
+        case XAsyncOp_Cancel:
+            break;
+    }
+
+    IXThreadingImpl_Release( xthreading );
+    return hr;
+}
+
 static HRESULT WINAPI x_store_XStoreQueryGameLicenseAsync( IXStoreImpl6 *iface, const XStoreContextHandle storeContextHandle, XAsyncBlock *async )
 {
-    FIXME( "iface %p, storeContextHandle %p, async %p stub!\n", iface, storeContextHandle, async );
-    return E_NOTIMPL;
+    struct XStoreQueryLicenseContext *context;
+    IXThreadingImpl *xthreading;
+    HRESULT hr;
+
+    TRACE( "iface %p, storeContextHandle %p, async %p\n", iface, storeContextHandle, async );
+
+    if (!async) return E_POINTER;
+    if (FAILED(hr = QueryApiImpl( &CLSID_XThreadingImpl, &IID_IXThreadingImpl, (void **)&xthreading ))) return hr;
+
+    if (!(context = calloc( 1, sizeof(*context) )))
+    {
+        IXThreadingImpl_Release( xthreading );
+        return E_OUTOFMEMORY;
+    }
+
+    hr = IXThreadingImpl_XAsyncBegin( xthreading, async, context, NULL, "XStoreQueryGameLicenseAsync", XStoreQueryGameLicenseProvider );
+    IXThreadingImpl_Release( xthreading );
+
+    if (FAILED(hr)) free( context );
+    return hr;
 }
 
 static HRESULT WINAPI x_store_XStoreQueryGameLicenseResult( IXStoreImpl6 *iface, XAsyncBlock *async, XStoreGameLicense *license )
 {
-    FIXME( "iface %p, async %p, license %p stub!\n", iface, async, license );
-    return E_NOTIMPL;
+    IXThreadingImpl *xthreading;
+    HRESULT hr;
+
+    TRACE( "iface %p, async %p, license %p\n", iface, async, license );
+
+    if (!async || !license) return E_POINTER;
+
+    if (FAILED(hr = QueryApiImpl( &CLSID_XThreadingImpl, &IID_IXThreadingImpl, (void **)&xthreading ))) return hr;
+    hr = IXThreadingImpl_XAsyncGetResult( xthreading, async, NULL, sizeof(XStoreGameLicense), license, NULL );
+    IXThreadingImpl_Release( xthreading );
+
+    return hr;
+}
+
+static HRESULT WINAPI XStoreQueryAddOnLicensesProvider( XAsyncOp op, const XAsyncProviderData *data )
+{
+    IXThreadingImpl *xthreading;
+    HRESULT hr;
+
+    TRACE( "op %d, data %p.\n", op, data );
+
+    if (FAILED(hr = QueryApiImpl( &CLSID_XThreadingImpl, &IID_IXThreadingImpl, (void **)&xthreading ))) return hr;
+
+    switch (op)
+    {
+        case XAsyncOp_Begin:
+            hr = IXThreadingImpl_XAsyncSchedule( xthreading, data->async, 0 );
+            break;
+
+        case XAsyncOp_GetResult:
+            /* Return 0 add-on licenses */
+            break;
+
+        case XAsyncOp_DoWork:
+            IXThreadingImpl_XAsyncComplete( xthreading, data->async, S_OK, 0 );
+            hr = S_OK;
+            break;
+
+        case XAsyncOp_Cleanup:
+            break;
+
+        case XAsyncOp_Cancel:
+            break;
+    }
+
+    IXThreadingImpl_Release( xthreading );
+    return hr;
 }
 
 static HRESULT WINAPI x_store_XStoreQueryAddOnLicensesAsync( IXStoreImpl6 *iface, const XStoreContextHandle storeContextHandle, XAsyncBlock *async )
 {
-    FIXME( "iface %p, storeContextHandle %p, async %p stub!\n", iface, storeContextHandle, async );
-    return E_NOTIMPL;
+    IXThreadingImpl *xthreading;
+    HRESULT hr;
+
+    TRACE( "iface %p, storeContextHandle %p, async %p\n", iface, storeContextHandle, async );
+
+    if (!async) return E_POINTER;
+    if (FAILED(hr = QueryApiImpl( &CLSID_XThreadingImpl, &IID_IXThreadingImpl, (void **)&xthreading ))) return hr;
+
+    hr = IXThreadingImpl_XAsyncBegin( xthreading, async, NULL, NULL, "XStoreQueryAddOnLicensesAsync", XStoreQueryAddOnLicensesProvider );
+    IXThreadingImpl_Release( xthreading );
+
+    return hr;
 }
 
 static HRESULT WINAPI x_store_XStoreQueryAddOnLicensesResultCount( IXStoreImpl6 *iface, XAsyncBlock *async, UINT32 *count )
 {
-    FIXME( "iface %p, async %p, count %p stub!\n", iface, async, count );
-    return E_NOTIMPL;
+    TRACE( "iface %p, async %p, count %p\n", iface, async, count );
+
+    if (!async || !count) return E_POINTER;
+
+    *count = 0;
+    return S_OK;
 }
 
 static HRESULT WINAPI x_store_XStoreQueryAddOnLicensesResult( IXStoreImpl6 *iface, XAsyncBlock *async, UINT32 count, XStoreAddonLicense *addOnLicenses )
 {
-    FIXME( "iface %p, async %p, count %u, addOnLicenses %p stub!\n", iface, async, count, addOnLicenses );
-    return E_NOTIMPL;
+    TRACE( "iface %p, async %p, count %u, addOnLicenses %p\n", iface, async, count, addOnLicenses );
+
+    if (!async) return E_POINTER;
+
+    return S_OK;
 }
 
 static HRESULT WINAPI x_store_XStoreQueryConsumableBalanceRemainingAsync( IXStoreImpl6 *iface, const XStoreContextHandle storeContextHandle, const char *storeProductId, XAsyncBlock *async )
@@ -478,16 +708,63 @@ static HRESULT WINAPI __PADDING_3__( IXStoreImpl6 *iface )
     return E_NOTIMPL;
 }
 
+static HRESULT WINAPI XStoreShowPurchaseUIProvider( XAsyncOp op, const XAsyncProviderData *data )
+{
+    IXThreadingImpl *xthreading;
+    HRESULT hr;
+
+    TRACE( "op %d, data %p.\n", op, data );
+
+    if (FAILED(hr = QueryApiImpl( &CLSID_XThreadingImpl, &IID_IXThreadingImpl, (void **)&xthreading ))) return hr;
+
+    switch (op)
+    {
+        case XAsyncOp_Begin:
+            hr = IXThreadingImpl_XAsyncSchedule( xthreading, data->async, 0 );
+            break;
+
+        case XAsyncOp_GetResult:
+            break;
+
+        case XAsyncOp_DoWork:
+            IXThreadingImpl_XAsyncComplete( xthreading, data->async, S_OK, 0 );
+            hr = S_OK;
+            break;
+
+        case XAsyncOp_Cleanup:
+            break;
+
+        case XAsyncOp_Cancel:
+            break;
+    }
+
+    IXThreadingImpl_Release( xthreading );
+    return hr;
+}
+
 static HRESULT WINAPI x_store_XStoreShowPurchaseUIAsync( IXStoreImpl6 *iface, const XStoreContextHandle storeContextHandle, const char *storeId, const char *name, const char *extendedJsonData, XAsyncBlock *async )
 {
-    FIXME( "iface %p, storeContextHandle %p, storeId %s, name %s, extendedJsonData %s, async %p stub!\n", iface, storeContextHandle, debugstr_a( storeId ), debugstr_a( name ), debugstr_a( extendedJsonData ), async );
-    return E_NOTIMPL;
+    IXThreadingImpl *xthreading;
+    HRESULT hr;
+
+    TRACE( "iface %p, storeContextHandle %p, storeId %s, name %s, extendedJsonData %s, async %p\n", iface, storeContextHandle, debugstr_a( storeId ), debugstr_a( name ), debugstr_a( extendedJsonData ), async );
+
+    if (!async) return E_POINTER;
+    if (FAILED(hr = QueryApiImpl( &CLSID_XThreadingImpl, &IID_IXThreadingImpl, (void **)&xthreading ))) return hr;
+
+    hr = IXThreadingImpl_XAsyncBegin( xthreading, async, NULL, NULL, "XStoreShowPurchaseUIAsync", XStoreShowPurchaseUIProvider );
+    IXThreadingImpl_Release( xthreading );
+
+    return hr;
 }
 
 static HRESULT WINAPI x_store_XStoreShowPurchaseUIResult( IXStoreImpl6 *iface, XAsyncBlock *async )
 {
-    FIXME( "iface %p, async %p stub!\n", iface, async );
-    return E_NOTIMPL;
+    TRACE( "iface %p, async %p\n", iface, async );
+
+    if (!async) return E_POINTER;
+
+    return S_OK;
 }
 
 static HRESULT WINAPI x_store_XStoreShowRateAndReviewUIAsync( IXStoreImpl6 *iface, const XStoreContextHandle storeContextHandle, XAsyncBlock *async )
