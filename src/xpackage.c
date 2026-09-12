@@ -116,12 +116,6 @@ static BOOLEAN WINAPI x_package_XPackageUnregisterInstallationProgressChanged( I
     return TRUE;
 }
 
-static HRESULT WINAPI x_package_XPackageGetUserLocale( IXPackageImpl3 *iface, SIZE_T localeSize, char *locale )
-{
-    FIXME( "iface %p, localeSize %Iu, locale %p stub!\n", iface, localeSize, locale );
-    return E_NOTIMPL;
-}
-
 static HRESULT WINAPI x_package_XPackageFindChunkAvailability( IXPackageImpl3 *iface, const char *packageIdentifier, UINT32 selectorCount, XPackageChunkSelector *selectors, XPackageChunkAvailability *availability )
 {
     FIXME( "iface %p, packageIdentifier %s, selectorCount %u, selectors %p, availability %p stub!\n", iface, packageIdentifier, selectorCount, selectors, availability );
@@ -283,10 +277,40 @@ static HRESULT WINAPI x_package_XPackageMountWithUiResult( IXPackageImpl3 *iface
     return E_NOTIMPL;
 }
 
+static HRESULT WINAPI x_package_XPackageGetUserLocale( IXPackageImpl3 *iface, SIZE_T localeSize, char *locale )
+{
+    static const char default_locale[] = "en-US";
+    SIZE_T required;
+
+    TRACE( "iface %p, localeSize %Iu, locale %p\n", iface, localeSize, locale );
+
+    if (!locale) return E_POINTER;
+
+    required = sizeof(default_locale);
+    if (localeSize < required) return E_NOT_SUFFICIENT_BUFFER;
+
+    memcpy( locale, default_locale, required );
+    return S_OK;
+}
+
 static HRESULT WINAPI x_package_XPackageEnumeratePackages3( IXPackageImpl3 *iface, XPackageKind kind, XPackageEnumerationScope scope, void *context, XPackageEnumerationCallback *callback )
 {
-    TRACE( "iface %p, kind %d, scope %d, context %p, callback %p!\n", iface, kind, scope, context, callback );
-    if (!callback) return E_INVALIDARG;
+    XPackageDetails details = {0};
+
+    TRACE( "iface %p, kind %d, scope %d, context %p, callback %p\n", iface, kind, scope, context, callback );
+
+    if (!callback) return E_POINTER;
+
+    details.kind = kind;
+    details.packageIdentifier = "mock_main_package_id";
+    details.version.major = 1;
+    details.version.minor = 0;
+    details.version.build = 0;
+    details.version.revision = 0;
+    details.displayName = "Main Package";
+    details.publisher = "Publisher";
+
+    callback( context, &details );
     return S_OK;
 }
 
